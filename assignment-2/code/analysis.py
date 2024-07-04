@@ -2,12 +2,15 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 
-x_train = np.load(os.path.join("./data", "digitdata", 'x_train.npy'))
-y_train = np.load(os.path.join("./data", "digitdata", 'y_train.npy'))
-x_val = np.load(os.path.join("./data", "digitdata", 'x_val.npy'))
-y_val = np.load(os.path.join("./data", "digitdata", 'y_val.npy'))
-x_test = np.load(os.path.join("./data", "digitdata", 'x_test.npy'))
-y_test = np.load(os.path.join("./data", "digitdata", 'y_test.npy'))
+# update folder path to be dynamic
+data_folder = f"{os.path.dirname(os.path.realpath(__file__))}/data/digitdata"
+
+x_train = np.load(os.path.join(data_folder, 'x_train.npy'))
+y_train = np.load(os.path.join(data_folder, 'y_train.npy'))
+x_val = np.load(os.path.join(data_folder, 'x_val.npy'))
+y_val = np.load(os.path.join(data_folder, 'y_val.npy'))
+x_test = np.load(os.path.join(data_folder, 'x_test.npy'))
+y_test = np.load(os.path.join(data_folder, 'y_test.npy'))
 
 # Display shapes of the data
 print("Shapes of the data:")
