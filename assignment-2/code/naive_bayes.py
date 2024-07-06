@@ -5,6 +5,7 @@
 
 import numpy as np
 from tqdm import tqdm
+import torch
 
 class NaiveBayes:
     def __init__(self, smoothing_factor=1.0):
@@ -28,9 +29,11 @@ class NaiveBayes:
         Returns:
         class_probs: Array of prior probabilities for each class.
         """
-        num_classes = len(np.unique(y_train))
-        class_probs = np.zeros(num_classes)
-        "*** YOUR CODE HERE ***"
+        num_classes = len(torch.unique(y_train))
+        class_probs = torch.zeros(num_classes)
+
+        for cls in range(num_classes):
+            class_probs[cls] = torch.sum(y_train == cls) / len(y_train)
 
         return class_probs
 
@@ -46,10 +49,15 @@ class NaiveBayes:
         Returns:
         feature_probs: Array of conditional probabilities for each feature and class.
         """
-        num_classes = len(np.unique(y_train))
+        num_classes = len(torch.unique(y_train))
         _ , num_features = x_train.shape
-        feature_probs = None # need to change the intialize
-        "*** YOUR CODE HERE ***"
+        feature_probs = torch.zeros((num_classes, num_features, 2)) # for binary features
+
+        for cls in range(num_classes):
+            cls_indices = torch.where(y_train == cls)[0]
+            cls_features = x_train[cls_indices]
+            feature_probs[cls, :, 0] = (torch.sum(cls_features==0, axis=0) + self.smoothing_factor) / (len(cls_indices) + 2 * self.smoothing_factor)
+            feature_probs[cls, :, 1] = (torch.sum(cls_features==1, axis=0) + self.smoothing_factor) / (len(cls_indices) + 2 * self.smoothing_factor)
 
         return feature_probs
 
@@ -77,9 +85,18 @@ class NaiveBayes:
         """
         num_samples, num_features = x_test.shape
         num_classes = len(self.class_probs)
-        predictions = np.zeros(num_samples)
-        "*** YOUR CODE HERE ***"
-        
+        predictions = torch.zeros(num_samples, dtype=torch.int64)
+
+        for i in tqdm(range(num_samples), desc="Predicting..."):
+            log_probs = torch.zeros(num_classes)
+            for cls in range(num_classes):
+                log_prob = torch.log(self.class_probs[cls])
+                for j in range(num_features):
+                    feature_val = int(x_test[i, j])
+                    log_prob += torch.log(self.feature_probs[cls, j, feature_val])
+                log_probs[cls] = log_prob
+            predictions[i] = torch.argmax(log_probs)        
+
         return predictions
 
         

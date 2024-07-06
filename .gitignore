@@ -1,3 +1,4 @@
 assess1/
 *__pycache__
 assess2/
+*.sh
