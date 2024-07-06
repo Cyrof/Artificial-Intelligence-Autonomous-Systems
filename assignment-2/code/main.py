@@ -68,12 +68,12 @@ def nb():
     # predict on validation set 
     y_val_pred = nb.predict(x_val)
     val_acc = torch.mean((y_val_pred == y_val).float())
-    print(f"Validation Accuracy: {val_acc * 100:.2f}%")
+    print(f"\nValidation Accuracy: {val_acc * 100:.2f}%\n\n")
 
-  # # predict on test set 
-  # y_test_pred = nb.predict(x_test)
-  # test_acc = torch.mean((y_test_pred == y_test).float())
-  # print(f"Test Accuracy: {test_acc * 100:.2f}%")
+    # predict on test set 
+    y_test_pred = nb.predict(x_test)
+    test_acc = torch.mean((y_test_pred == y_test).float())
+    print(f"\nTest Accuracy: {test_acc * 100:.2f}%")
 
 
 

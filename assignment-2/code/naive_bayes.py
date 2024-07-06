@@ -82,21 +82,20 @@ class NaiveBayes:
     
         Returns:
         predictions: Predicted class labels for test features.
-        """
+        """    
+
         num_samples, num_features = x_test.shape
         num_classes = len(self.class_probs)
-        predictions = torch.zeros(num_samples, dtype=torch.int64)
 
-        for i in tqdm(range(num_samples), desc="Predicting..."):
-            log_probs = torch.zeros(num_classes)
-            for cls in range(num_classes):
-                log_prob = torch.log(self.class_probs[cls])
-                for j in range(num_features):
-                    feature_val = int(x_test[i, j])
-                    log_prob += torch.log(self.feature_probs[cls, j, feature_val])
-                log_probs[cls] = log_prob
-            predictions[i] = torch.argmax(log_probs)        
+        # Initialise log probabilities with the class probabilities 
+        log_probs = torch.log(self.class_probs).view(1, -1).repeat(num_samples, 1)
+
+        for cls in tqdm(range(num_classes), desc="Predicting"):
+            # Add log probabilities for features being 0
+            log_probs[:, cls] += torch.sum(torch.log(self.feature_probs[cls, :, 0]) * (1 - x_test), dim=1)
+            # Add log probabilities for features being 1 
+            log_probs[:, cls] += torch.sum(torch.log(self.feature_probs[cls, :, 1]) * x_test, dim=1)
+
+        predictions = torch.argmax(log_probs, dim=1)
 
         return predictions
-
-        
