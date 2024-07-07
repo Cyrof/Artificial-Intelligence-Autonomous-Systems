@@ -29,7 +29,7 @@ def import_model(filename):
   with open(path, 'rb') as f:
     model = pickle.load(f)
   f.close()
-  print("Model imported from {path}")
+  print(f"Model imported from {path}")
   return model
 
 def nb():
@@ -56,8 +56,6 @@ def nb():
   if not os.path.isfile(file_path):
     print("Model does not exists...\n Creating model.")
     nb = NaiveBayes()
-    class_prob = nb.calculate_class_probs(y_train)
-    feature_prob = nb.calculate_feature_probs(x_train, y_train)
     nb.train(x_train, y_train)
     save_to_file(nb, "naive_bayes")
 
@@ -65,15 +63,15 @@ def nb():
     print("Model already exists. Skipping model creation.")
     nb = import_model("naive_bayes")
     
-    # predict on validation set 
-    y_val_pred = nb.predict(x_val)
-    val_acc = torch.mean((y_val_pred == y_val).float())
-    print(f"\nValidation Accuracy: {val_acc * 100:.2f}%\n\n")
+  # predict on validation set 
+  y_val_pred = nb.predict(x_val)
+  val_acc = torch.mean((y_val_pred == y_val).float())
+  print(f"\nValidation Accuracy: {val_acc * 100:.2f}%\n\n")
 
-    # predict on test set 
-    y_test_pred = nb.predict(x_test)
-    test_acc = torch.mean((y_test_pred == y_test).float())
-    print(f"\nTest Accuracy: {test_acc * 100:.2f}%")
+  # predict on test set 
+  y_test_pred = nb.predict(x_test)
+  test_acc = torch.mean((y_test_pred == y_test).float())
+  print(f"\nTest Accuracy: {test_acc * 100:.2f}%")
 
 
 
