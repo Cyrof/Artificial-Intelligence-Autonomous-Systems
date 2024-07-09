@@ -14,6 +14,67 @@ import pandas as pd
 import torch.nn as nn
 import torch.optim as optim
 from tqdm import tqdm
+import torch
+import pickle
+
+def save_to_file(model, filename):
+  path = f"{os.path.dirname(os.path.realpath(__file__))}/models/{filename}.pkl"
+  with open(path, 'wb') as f: 
+    pickle.dump(model, f)
+  f.close()
+  print(f"Model saved to {path}")
+
+def import_model(filename):
+  path = f"{os.path.dirname(os.path.realpath(__file__))}/models/{filename}.pkl"
+  with open(path, 'rb') as f:
+    model = pickle.load(f)
+  f.close()
+  print(f"Model imported from {path}")
+  return model
+
+def nb():
+  file_path = f"{os.path.dirname(os.path.realpath(__file__))}/models/naive_bayes.pkl"
+
+  nb_loader = NBDataLoader(args.data_dir)
+  x_train, y_train = nb_loader.get_train_data()
+  x_val, y_val = nb_loader.get_val_data()
+  x_test, y_test = nb_loader.get_test_data()
+
+  # convert data to torch tensor
+  x_train = torch.tensor(x_train, dtype=torch.float32)
+  y_train = torch.tensor(y_train, dtype=torch.int64)
+  x_val = torch.tensor(x_val, dtype=torch.float32)
+  y_val = torch.tensor(y_val, dtype=torch.int64)
+  x_test = torch.tensor(x_test, dtype=torch.float32)
+  y_test = torch.tensor(y_test, dtype=torch.int64)
+
+  # flatten and binarise data
+  x_train = (x_train.view(x_train.size(0), -1) > 127).int()
+  x_val = (x_val.view(x_val.size(0), -1) > 127).int()
+  x_test = (x_test.view(x_test.size(0), -1) > 127).int()
+
+  if not os.path.isfile(file_path):
+    print("Model does not exists...\n Creating model.")
+    nb = NaiveBayes()
+    nb.train(x_train, y_train)
+    save_to_file(nb, "naive_bayes")
+
+  else: 
+    print("Model already exists. Skipping model creation.")
+    nb = import_model("naive_bayes")
+    
+  # predict on validation set 
+  y_val_pred = nb.predict(x_val)
+  val_acc = torch.mean((y_val_pred == y_val).float())
+  print(f"\nValidation Accuracy: {val_acc * 100:.2f}%\n\n")
+
+  # predict on test set 
+  y_test_pred = nb.predict(x_test)
+  test_acc = torch.mean((y_test_pred == y_test).float())
+  print(f"\nTest Accuracy: {test_acc * 100:.2f}%")
+
+
+
 
 USAGE_STRING = """
   USAGE:      python main.py <options>
@@ -39,9 +100,7 @@ if __name__ == "__main__":
   print("classifier:\t" + args.classifier)
 
   if args.classifier == "nb":
-    """
-    choose naive bayes
-    """
+    nb()
   else:
     """
     choose the alternative model
