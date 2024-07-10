@@ -97,6 +97,7 @@ def evaluate_model(model, x, y, dataset_name):
   dataset_name (str): The name of the dataset.
   """
   y_pred = model.predict(x)
+  print(y_pred)
   accuracy = torch.mean((y_pred == y).float())
   print(f"\n{dataset_name} Accuracy: {accuracy * 100:.2f}%")
   return accuracy
@@ -139,8 +140,45 @@ def nb(args):
     evaluate_model(nb, x_test, y_test, "Test")
   else: 
     raise UnknownArgs("Unknown argument used for --mode.")
-  
 
+def calculate_acc(model, dataloader):
+  model.eval()
+  predicted_values = model.predict(dataloader)
+  # print(predicted_values)
+  correct = 0
+  total = 0
+  idx = 0
+  with torch.no_grad():
+    for inputs, labels in dataloader:
+      batch_size = labels.size(0)
+      preds = predicted_values[idx:idx + batch_size]
+      idx += batch_size
+      total += batch_size
+      correct += (torch.tensor(preds) == labels.cpu()).sum().item()
+  acc = 100 * correct / total 
+  print(f"Accuracy of the network on the test images: {acc:.2f}%")
+  
+def alt_cnn(args):
+  alt_loader = ALTDataLoader(args.data_dir, args.mode)
+  dataloader = DataLoader(alt_loader, batch_size=args.batch_size, shuffle=True)
+  
+  if args.mode == "train":
+    cnn = ALTModel()
+    criterion = nn.CrossEntropyLoss()
+    optimiser = optim.Adam(cnn.parameters(), lr=args.learning_rate)
+    cnn.train_model(dataloader, args.epoch, criterion, optimiser)
+    
+    save_to_file(cnn, 'cnn')
+    
+  elif args.mode =="test":
+    cnn = import_model('cnn')
+    cnn.test_model(dataloader)
+    predicted = cnn.predict(dataloader)
+    # print(predicted)
+    
+  else: 
+    raise UnknownArgs("Unknown argument used for --mode.")
+  
 USAGE_STRING = """
   USAGE:      python main.py <options>
   EXAMPLES:   (1) python main.py --c nb --d digitdata --mode train
@@ -167,9 +205,7 @@ if __name__ == "__main__":
   if args.classifier == "nb":
     nb(args)
   else:
-    """
-    choose the alternative model
-    """
+    alt_cnn(args)
 
 
 
