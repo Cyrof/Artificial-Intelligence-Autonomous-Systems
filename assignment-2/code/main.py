@@ -99,6 +99,7 @@ def evaluate_model(model, x, y, dataset_name):
   y_pred = model.predict(x)
   accuracy = torch.mean((y_pred == y).float())
   print(f"\n{dataset_name} Accuracy: {accuracy * 100:.2f}%")
+  return accuracy
 
 def nb(args):
   """
@@ -111,10 +112,24 @@ def nb(args):
   x_train, y_train, x_val, y_val, x_test, y_test = process_data(nb_loader)
   
   if args.mode == "train":
-    nb = NaiveBayes()
+    best_smoothing = 0
+    best_accuracy = 0
+    for sf in [0.1, 0.5, 1.0, 1.5, 2.0]:
+      print(f"Testing smoothing factor: {sf}")
+      nb = NaiveBayes(smoothing_factor=sf)
+      nb.train(x_train, y_train)
+      val_accuracy = evaluate_model(nb, x_val, y_val, "Validation")
+      if val_accuracy > best_accuracy:
+        best_accuracy = val_accuracy
+        best_smoothing = sf
+    
+    print(f"Best smoothing factor: {best_smoothing} with accuracy: {best_accuracy * 100:.2f}%")
+    nb = NaiveBayes(smoothing_factor=best_smoothing)
     nb.train(x_train, y_train)
+    
     save_to_file(nb, "naive_bayes")
     print("Run command with mode=test to test the model.")
+    
   elif args.mode == "test":
     try:
       nb = import_model("naive_bayes")
