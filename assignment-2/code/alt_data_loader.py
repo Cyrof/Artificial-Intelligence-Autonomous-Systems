@@ -19,8 +19,9 @@ class ALTDataLoader(Dataset):
         data_dir: Directory containing data files.
         mode: 'train', 'valid', or 'test' mode for loading corresponding data.
         """
-        self.x = np.load(os.path.join("./data", data_dir, 'x_{}.npy'.format(mode)))
-        self.y = np.load(os.path.join("./data", data_dir, 'y_{}.npy'.format(mode)))
+        self.data_folder = f"{os.path.dirname(os.path.realpath(__file__))}/data"
+        self.x = np.load(os.path.join(self.data_folder, data_dir, f'x_{mode}.npy'))
+        self.y = np.load(os.path.join(self.data_folder, data_dir, f'y_{mode}.npy'))
         
     def __len__(self):
         """
@@ -40,3 +41,6 @@ class ALTDataLoader(Dataset):
         y (tensor): Label tensor.
         """
         return torch.tensor(self.x[idx].reshape(784), dtype=torch.float32), torch.tensor(self.y[idx], dtype=torch.long)
+
+    def get_labels(self):
+        return self.y
