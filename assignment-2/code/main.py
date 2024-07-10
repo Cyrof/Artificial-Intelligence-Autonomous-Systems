@@ -16,8 +16,16 @@ import torch.optim as optim
 from tqdm import tqdm
 import torch
 import pickle
+from errors import *
 
 def save_to_file(model, filename):
+  """
+  Saves the m odel to a specified file.
+  
+  Parameters: 
+  model (object): The model to save.
+  filename (str): The name of the file to save the model to.
+  """
   path = f"{os.path.dirname(os.path.realpath(__file__))}/models/{filename}.pkl"
   with open(path, 'wb') as f: 
     pickle.dump(model, f)
@@ -25,6 +33,15 @@ def save_to_file(model, filename):
   print(f"Model saved to {path}")
 
 def import_model(filename):
+  """
+  Imports a model from a specified file.
+  
+  Parameters:
+  filename (str): The name of the file to import the model from.
+  
+  Returns: 
+  object: The imported model.
+  """
   path = f"{os.path.dirname(os.path.realpath(__file__))}/models/{filename}.pkl"
   with open(path, 'rb') as f:
     model = pickle.load(f)
@@ -32,49 +49,82 @@ def import_model(filename):
   print(f"Model imported from {path}")
   return model
 
-def nb():
-  file_path = f"{os.path.dirname(os.path.realpath(__file__))}/models/naive_bayes.pkl"
+def prepare_data(x, y):
+  """
+  Prepares data for training/testing by converting to torch tensors and binarising. 
+  
+  Parameters: 
+  x (ndarray): Input data.
+  y (ndarray): Labels.
+  
+  Returns: 
+  Tuple[torch.Tensor, torch.Tensor]: Processed input data and labels.
+  """
+  x = torch.tensor(x, dtype=torch.float32)
+  y = torch.tensor(y, dtype=torch.int64)
+  x = (x.view(x.size(0), -1) > 127).int()
+  return x, y
 
+def process_data(dataloader):
+  """
+  Processes the data using the given data loader. 
+  
+  Parameters: 
+  dataloader (NBDataLoader): The data loader to use for loading the data.
+  
+  Returns: 
+  Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+  Training, validation, and test data and labels.
+  """
+  x_train, y_train = dataloader.get_train_data()
+  x_val, y_val = dataloader.get_val_data()
+  x_test, y_test = dataloader.get_test_data()
+  
+  x_train, y_train = prepare_data(x_train, y_train)
+  x_val, y_val = prepare_data(x_val, y_val)
+  x_test, y_test = prepare_data(x_test, y_test)
+
+  return x_train, y_train, x_val, y_val, x_test, y_test
+
+def evaluate_model(model, x, y, dataset_name):
+  """
+  Evaluates the model on a given dataset.
+  
+  Parameters: 
+  model (object): The model to evaluate.
+  x (torch.Tensor): The input data.
+  y (torch.Tensor): The labels.
+  dataset_name (str): The name of the dataset.
+  """
+  y_pred = model.predict(x)
+  accuracy = torch.mean((y_pred == y).float())
+  print(f"\n{dataset_name} Accuracy: {accuracy * 100:.2f}%")
+
+def nb(args):
+  """
+  Trains or tests the Naive Bayes model based on the provided arguments. 
+  
+  Parameters: 
+  args (Namespace): The command-line arguments.
+  """
   nb_loader = NBDataLoader(args.data_dir)
-  x_train, y_train = nb_loader.get_train_data()
-  x_val, y_val = nb_loader.get_val_data()
-  x_test, y_test = nb_loader.get_test_data()
-
-  # convert data to torch tensor
-  x_train = torch.tensor(x_train, dtype=torch.float32)
-  y_train = torch.tensor(y_train, dtype=torch.int64)
-  x_val = torch.tensor(x_val, dtype=torch.float32)
-  y_val = torch.tensor(y_val, dtype=torch.int64)
-  x_test = torch.tensor(x_test, dtype=torch.float32)
-  y_test = torch.tensor(y_test, dtype=torch.int64)
-
-  # flatten and binarise data
-  x_train = (x_train.view(x_train.size(0), -1) > 127).int()
-  x_val = (x_val.view(x_val.size(0), -1) > 127).int()
-  x_test = (x_test.view(x_test.size(0), -1) > 127).int()
-
-  if not os.path.isfile(file_path):
-    print("Model does not exists...\n Creating model.")
+  x_train, y_train, x_val, y_val, x_test, y_test = process_data(nb_loader)
+  
+  if args.mode == "train":
     nb = NaiveBayes()
     nb.train(x_train, y_train)
     save_to_file(nb, "naive_bayes")
-
+    print("Run command with mode=test to test the model.")
+  elif args.mode == "test":
+    try:
+      nb = import_model("naive_bayes")
+    except FileNotFoundError:
+      raise RuntimeError("No Naive bayes model trained. Please run with mode=train first.")
+    evaluate_model(nb, x_val, y_val, "Validation")
+    evaluate_model(nb, x_test, y_test, "Test")
   else: 
-    print("Model already exists. Skipping model creation.")
-    nb = import_model("naive_bayes")
-    
-  # predict on validation set 
-  y_val_pred = nb.predict(x_val)
-  val_acc = torch.mean((y_val_pred == y_val).float())
-  print(f"\nValidation Accuracy: {val_acc * 100:.2f}%\n\n")
-
-  # predict on test set 
-  y_test_pred = nb.predict(x_test)
-  test_acc = torch.mean((y_test_pred == y_test).float())
-  print(f"\nTest Accuracy: {test_acc * 100:.2f}%")
-
-
-
+    raise UnknownArgs("Unknown argument used for --mode.")
+  
 
 USAGE_STRING = """
   USAGE:      python main.py <options>
@@ -100,7 +150,7 @@ if __name__ == "__main__":
   print("classifier:\t" + args.classifier)
 
   if args.classifier == "nb":
-    nb()
+    nb(args)
   else:
     """
     choose the alternative model
