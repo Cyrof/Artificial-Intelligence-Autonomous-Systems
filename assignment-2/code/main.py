@@ -144,12 +144,11 @@ def nb(args):
 def calculate_acc(model, dataloader):
   model.eval()
   predicted_values = model.predict(dataloader)
-  # print(predicted_values)
   correct = 0
   total = 0
   idx = 0
   with torch.no_grad():
-    for inputs, labels in dataloader:
+    for inputs, labels in tqdm(dataloader):
       batch_size = labels.size(0)
       preds = predicted_values[idx:idx + batch_size]
       idx += batch_size
@@ -160,9 +159,9 @@ def calculate_acc(model, dataloader):
   
 def alt_cnn(args):
   alt_loader = ALTDataLoader(args.data_dir, args.mode)
-  dataloader = DataLoader(alt_loader, batch_size=args.batch_size, shuffle=True)
   
   if args.mode == "train":
+    dataloader = DataLoader(alt_loader, batch_size=args.batch_size, shuffle=True)
     cnn = ALTModel()
     criterion = nn.CrossEntropyLoss()
     optimiser = optim.Adam(cnn.parameters(), lr=args.learning_rate)
@@ -171,10 +170,9 @@ def alt_cnn(args):
     save_to_file(cnn, 'cnn')
     
   elif args.mode =="test":
+    dataloader = DataLoader(alt_loader, batch_size=args.batch_size, shuffle=False)
     cnn = import_model('cnn')
-    cnn.test_model(dataloader)
-    predicted = cnn.predict(dataloader)
-    # print(predicted)
+    calculate_acc(cnn, dataloader)
     
   else: 
     raise UnknownArgs("Unknown argument used for --mode.")

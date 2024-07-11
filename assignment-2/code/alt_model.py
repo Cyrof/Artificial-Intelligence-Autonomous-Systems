@@ -53,18 +53,18 @@ class ALTModel(nn.Module):
         return predictions
     
     
-    def test_model(self, dataloader):
-        self.eval()
-        correct = 0
-        total = 0
-        predicted_values = []
-        with torch.no_grad():
-            for inputs, labels in dataloader:
-                outputs = self(inputs)
-                _, predicted = torch.max(outputs.data, 1)
-                # _, predicted = torch.max(outputs, 1)
-                predicted_values.append(predicted)
-                total += labels.size(0)
-                correct += (predicted == labels).sum().item()
-        print(f"Accuracy of the network on the test images: {100 * correct/total}%")
-        return predicted_values
+    # def test_model(self, dataloader):
+    #     self.eval()
+    #     correct = 0
+    #     total = 0
+    #     predicted_values = []
+    #     with torch.no_grad():
+    #         for inputs, labels in dataloader:
+    #             outputs = self(inputs)
+    #             _, predicted = torch.max(outputs.data, 1)
+    #             # _, predicted = torch.max(outputs, 1)
+    #             predicted_values.append(predicted)
+    #             total += labels.size(0)
+    #             correct += (predicted == labels).sum().item()
+    #     print(f"Accuracy of the network on the test images: {100 * correct/total}%")
+    #     return predicted_values
