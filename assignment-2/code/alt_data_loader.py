@@ -41,6 +41,3 @@ class ALTDataLoader(Dataset):
         y (tensor): Label tensor.
         """
         return torch.tensor(self.x[idx].reshape(784), dtype=torch.float32), torch.tensor(self.y[idx], dtype=torch.long)
-
-    def get_labels(self):
-        return self.y
