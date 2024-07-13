@@ -15,6 +15,7 @@ import torch.nn as nn
 import torch.optim as optim
 from tqdm import tqdm
 import torch
+from torchmetrics import Accuracy
 import pickle
 from errors import *
 
@@ -161,11 +162,14 @@ def alt_cnn(args):
   alt_loader = ALTDataLoader(args.data_dir, args.mode)
   
   if args.mode == "train":
-    dataloader = DataLoader(alt_loader, batch_size=args.batch_size, shuffle=True)
+    train_dataloader = DataLoader(alt_loader, batch_size=args.batch_size, shuffle=True)
+    test_dataloader = DataLoader(ALTDataLoader(args.data_dir, "val"), batch_size=args.batch_size, shuffle=True)
+    # test_dataloader = DataLoader(alt_loader[1], batch_size=args.batch_size, shuffle=True)
     cnn = ALTModel()
     criterion = nn.CrossEntropyLoss()
     optimiser = optim.Adam(cnn.parameters(), lr=args.learning_rate)
-    cnn.train_model(dataloader, args.epoch, criterion, optimiser)
+    accuracy = Accuracy(task="multiclass", num_classes=10)
+    cnn.train_model(train_dataloader, test_dataloader, 15, criterion, optimiser, accuracy)
     
     save_to_file(cnn, 'cnn')
     

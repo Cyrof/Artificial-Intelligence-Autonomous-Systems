@@ -1,6 +1,8 @@
 import os
 import numpy as np
 import matplotlib.pyplot as plt
+from alt_data_loader import *
+import torch
 
 # update folder path to be dynamic
 data_folder = f"{os.path.dirname(os.path.realpath(__file__))}/data/digitdata"
@@ -31,8 +33,14 @@ def visualise_img():
     plt.title(f"Label: {y_train[image_index]}")
     plt.show()
 
+def altLoader():
+    altD = ALTDataLoader("digitdata", "train")
+    print(altD[0])
 
 if __name__ == "__main__":
-    display_shapes()
-    visualise_img()
+    # display_shapes()
+    # visualise_img()
     # print(*x_train[0])
+    # altLoader()
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    print(device)

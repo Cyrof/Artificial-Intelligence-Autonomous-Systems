@@ -15,56 +15,122 @@ class ALTModel(nn.Module):
     """
     def __init__(self):
         super(ALTModel, self).__init__()
-        self.fc1 = nn.Linear(784, 128)
-        self.fc2 = nn.Linear(128, 64)
-        self.fc3 = nn.Linear(64, 10)
-
-
-    def forward(self, x):
-        # x = x.view(x.size(0), -1)
-        x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
-        x = self.fc3(x)
-        return x
-    
-    def train_model(self, dataloader, epochs, criterion, optimiser):
-        self.train()
+        self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
+        print(self.device)
+        self.feature = nn.Sequential(
+            # 1
+            nn.Conv2d(in_channels=1, out_channels=6, kernel_size=5, stride=1, padding=2), # 28*28-->32*32-->28*28
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2, stride=2), # 14*14
+            
+            # 2
+            nn.Conv2d(in_channels=6, out_channels=16, kernel_size=5, stride=1), #10*10
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2, stride=2), # 5*5
+        )
         
-        for epoch in range(epochs):
-            running_loss = 0.0
-            for inputs, labels in tqdm(dataloader):
+        self.classifier = nn.Sequential(
+            nn.Flatten(),
+            nn.Linear(in_features=16*5*5, out_features=120),
+            nn.ReLU(),
+            nn.Linear(in_features=120, out_features=84),
+            nn.ReLU(),
+            nn.Linear(in_features=84, out_features=10),
+        )
+    
+    def forward(self, x):
+        x = x.view(-1, 1, 28, 28)
+        return self.classifier(self.feature(x))
+    
+    def train_model(self, train_dataloader, test_dataloader, epochs, criterion, optimiser, accuracy):
+        accuracy = accuracy.to(self.device)
+        self = self.to(self.device)
+        for epoch in tqdm(range(epochs)):
+            train_loss, train_acc = 0.0, 0.0
+            for x, y in train_dataloader:
+                x, y = x.to(self.device), y.to(self.device)
+                
+                self.train()
+                y_pred = self(x)
+                loss = criterion(y_pred, y)
+                train_loss += loss.item()
+
+                acc = accuracy(y_pred, y)
+                train_acc += acc
+                
                 optimiser.zero_grad()
-                outputs = self(inputs)
-                loss = criterion(outputs, labels)
                 loss.backward()
                 optimiser.step()
-                running_loss += loss.item()
-            print(f"Epoch {epoch + 1}, Loss: {running_loss / len(dataloader)}")
+
+            train_loss /= len(train_dataloader)
+            train_acc /= len(train_dataloader)
+
+            # validation loop
+            val_loss, val_acc = 0.0, 0.0
+            self.eval()
+            with torch.inference_mode():
+                for x, y in test_dataloader:
+                    x, y = x.to(self.device), y.to(self.device)
+                    
+                    y_pred = self(x)
+                    
+                    loss = criterion(y_pred, y)
+                    val_loss += loss.item()
+                    
+                    acc = accuracy(y_pred, y)
+                    val_acc += acc
+
+                val_loss /= len(test_dataloader)
+                val_acc /= len(test_dataloader)
             
-    def predict(self, dataloader):
-        self.eval()
-        predictions = []
-        with torch.no_grad():
-            for inputs, _ in dataloader:
-                # inputs = inputs.view(inputs.size(0), -1)
-                outputs = self(inputs)
-                _, predicted = torch.max(outputs.data, 1)
-                predictions.extend(predicted.tolist())
-        return predictions
+            print(f"Epoch: {epoch} | Train loss: {train_loss: .5f} | Train acc: {train_acc: .5f} | Val loss: {val_loss: .5f} | Val acc: {val_acc: .5f}")
+            
+        
+    # def __init__(self):
+    #     super(ALTModel, self).__init__()
+    #     self.fc1 = nn.Linear(784, 128)
+    #     self.fc2 = nn.Linear(128, 64)
+    #     self.fc3 = nn.Linear(64, 10)
+    #     self.layer_sizes = [784, 128, 64, 10]
+    #     layers = []
+    #     for i in tqdm(range(len(self.layer_sizes) - 1)):
+    #         layers.append(nn.Linear(self.layer_sizes[i], self.layer_sizes[i+1]))
+    #         if i < len(self.layer_sizes)-2: 
+    #             layers.append(nn.ReLU())
+        
+    #     self.model = nn.Sequential(*layers)
+                
+
+    # def forward(self, x):
+    #     x = x.view(x.size(0), -1)
+    #     x = F.relu(self.fc1(x))
+    #     x = F.relu(self.fc2(x))
+    #     x = self.fc3(x)
+    #     # x = x.view(x.size(0), -1)
+    #     # x = self.model(x)
+    #     return x
     
-    
-    # def test_model(self, dataloader):
+    # def train_model(self, dataloader, epochs, criterion, optimiser):
+    #     self.train()
+        
+    #     for epoch in range(epochs):
+    #         running_loss = 0.0
+    #         for inputs, labels in tqdm(dataloader, desc="Training model."):
+    #             optimiser.zero_grad()
+    #             outputs = self(inputs)
+    #             loss = criterion(outputs, labels)
+    #             loss.backward()
+    #             optimiser.step()
+    #             running_loss += loss.item()
+    #         print(f"Epoch {epoch + 1}, Loss: {running_loss / len(dataloader)}")
+            
+    # def predict(self, dataloader):
     #     self.eval()
-    #     correct = 0
-    #     total = 0
-    #     predicted_values = []
+    #     predictions = []
     #     with torch.no_grad():
-    #         for inputs, labels in dataloader:
+    #         for inputs, _ in dataloader:
     #             outputs = self(inputs)
     #             _, predicted = torch.max(outputs.data, 1)
-    #             # _, predicted = torch.max(outputs, 1)
-    #             predicted_values.append(predicted)
-    #             total += labels.size(0)
-    #             correct += (predicted == labels).sum().item()
-    #     print(f"Accuracy of the network on the test images: {100 * correct/total}%")
-    #     return predicted_values
+    #             predictions.extend(predicted.tolist())
+    #     return predictions
+    
