@@ -18,6 +18,7 @@ import torch
 from torchmetrics import Accuracy
 import pickle
 from errors import *
+from sklearn.model_selection import ParameterGrid
 
 def save_to_file(model, filename):
   """
@@ -27,10 +28,17 @@ def save_to_file(model, filename):
   model (object): The model to save.
   filename (str): The name of the file to save the model to.
   """
-  path = f"{os.path.dirname(os.path.realpath(__file__))}/models/{filename}.pkl"
+  dir_path = f"{os.path.dirname(os.path.realpath(__file__))}/models"
+  path = f"{dir_path}/{filename}.pkl"
+
+  # create the directory if it doesn't exist
+  if not os.path.exists(dir_path):
+    os.makedirs(dir_path)
+
+  # save the model to the specified path
   with open(path, 'wb') as f: 
     pickle.dump(model, f)
-  f.close()
+  
   print(f"Model saved to {path}")
 
 def import_model(filename):
@@ -160,23 +168,55 @@ def calculate_acc(model, dataloader):
   
 def alt_cnn(args):
   alt_loader = ALTDataLoader(args.data_dir, args.mode)
+  criterion = nn.CrossEntropyLoss()
+  accuracy = Accuracy(task="multiclass", num_classes=10)
+
+
   
   if args.mode == "train":
-    train_dataloader = DataLoader(alt_loader, batch_size=args.batch_size, shuffle=True)
-    test_dataloader = DataLoader(ALTDataLoader(args.data_dir, "val"), batch_size=args.batch_size, shuffle=True)
+    # param_grid = {
+    #   'batch_size': [32, 64, 128],
+    #   'learning_rate': [0.001, 0.01, 0.1],
+    #   'epoch': [8, 16, 32, 64]
+    # }
+    # best_acc = 0
+    # best_params = {}
+
+    # param_combinations = list(ParameterGrid(param_grid))
+    # print(f"Total parameter combinations to try: {len(param_combinations)}")
+
+    # for params in tqdm(ParameterGrid(param_grid), desc="Grid Search"):
+    #   print(f"\nTrying parameters: {params}")
+    #   train_dataloader = DataLoader(alt_loader, batch_size=params['batch_size'], shuffle=True)
+    #   test_dataloader = DataLoader(ALTDataLoader(args.data_dir, "val"), batch_size=params['batch_size'], shuffle=True)
+    #   cnn = ALTModel()
+    #   optimiser = optim.Adam(cnn.parameters(), lr=params['learning_rate'])
+    #   cnn.train_model(train_dataloader, test_dataloader, epochs=params['epoch'], criterion=criterion, optimiser=optimiser, accuracy=accuracy)
+
+    #   current_acc = cnn.test_model(test_dataloader, criterion, accuracy)
+    #   print(f"Current accuracy: {current_acc:.5f}")
+
+    #   if current_acc > best_acc:
+    #     best_acc = current_acc
+    #     best_params = params
+    #     save_to_file(cnn, 'cnn')
+    
+    # print(f"Best parameters: {best_params}")
+    # print(f"Best accuracy: {best_acc}")
+    train_dataloader = DataLoader(alt_loader, batch_size=32, shuffle=True, num_workers=4, pin_memory=True)
+    test_dataloader = DataLoader(ALTDataLoader(args.data_dir, "val"), batch_size=32, shuffle=True, num_workers=4, pin_memory=True)
     # test_dataloader = DataLoader(alt_loader[1], batch_size=args.batch_size, shuffle=True)
     cnn = ALTModel()
-    criterion = nn.CrossEntropyLoss()
-    optimiser = optim.Adam(cnn.parameters(), lr=args.learning_rate)
-    accuracy = Accuracy(task="multiclass", num_classes=10)
+    optimiser = optim.Adam(cnn.parameters(), lr=0.001)
     cnn.train_model(train_dataloader, test_dataloader, 15, criterion, optimiser, accuracy)
     
     save_to_file(cnn, 'cnn')
     
   elif args.mode =="test":
-    dataloader = DataLoader(alt_loader, batch_size=args.batch_size, shuffle=False)
+    test_dataloader = DataLoader(alt_loader, batch_size=32, shuffle=False)
     cnn = import_model('cnn')
-    calculate_acc(cnn, dataloader)
+    # calculate_acc(cnn, dataloader)
+    cnn.test_model(test_dataloader, criterion, accuracy)
     
   else: 
     raise UnknownArgs("Unknown argument used for --mode.")
@@ -185,7 +225,7 @@ USAGE_STRING = """
   USAGE:      python main.py <options>
   EXAMPLES:   (1) python main.py --c nb --d digitdata --mode train
                   - trains the naive bayes classifier on the digit dataset
-              (2) python main.py --classifier alt  --data_dir digitdata --mode train --batch_size 64 --epoch 5 --learning_rate 0.0001
+              (2) python main.py --classifier alt  --data_dir digitdata --mode train 
                   - trains the alternative model
                   """
   
@@ -195,9 +235,6 @@ if __name__ == "__main__":
   parser.add_argument('-c', '--classifier', help='The type of classifier', choices=['nb', 'alt'], required=True)
   parser.add_argument('-d', '--data_dir', help='the dataset folder name', type=str, required=True)
   parser.add_argument('-m', '--mode', help='train, val or test', type=str, required=True)
-  parser.add_argument('-b', '--batch_size', help='batch size', type=int)
-  parser.add_argument('-e', '--epoch', help='number of epochs', type=int)
-  parser.add_argument('-l', '--learning_rate', help='learning rate', type=float)
   args = parser.parse_args()
 
   print("Doing classification")
