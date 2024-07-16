@@ -51,7 +51,7 @@ class ALTModel(nn.Module):
         for epoch in range(epochs):
             train_loss, train_acc = 0.0, 0.0
             for x, y in train_dataloader:
-                x, y =x.to(self.device), y.to(self.device)
+                x, y = x.to(self.device), y.to(self.device)
 
                 self.train()
                 optimiser.zero_grad()
@@ -93,6 +93,7 @@ class ALTModel(nn.Module):
     def test_model(self, test_dataloader, criterion, accuracy):
         test_loss, test_acc = 0, 0
 
+        accuracy.to(self.device)
         self.to(self.device)
 
         self.eval()
