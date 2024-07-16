@@ -89,47 +89,7 @@ class ALTModel(nn.Module):
             
             print(f"Epoch: {epoch+1} | Train loss: {train_loss: .5f} | Train acc: {train_acc: .5f} | Val loss: {val_loss: .5f} | Val acc: {val_acc: .5f}")
 
-        # # for epoch in tqdm(range(epochs)):
-        # for epoch in range(epochs):
-        #     train_loss, train_acc = 0.0, 0.0
-        #     for x, y in train_dataloader:
-        #         x, y = x.to(self.device), y.to(self.device)
-                
-        #         self.train()
-        #         y_pred = self(x)
-        #         loss = criterion(y_pred, y)
-        #         train_loss += loss.item()
-
-        #         acc = accuracy(y_pred, y)
-        #         train_acc += acc
-                
-        #         optimiser.zero_grad()
-        #         loss.backward()
-        #         optimiser.step()
-
-        #     train_loss /= len(train_dataloader)
-        #     train_acc /= len(train_dataloader)
-
-        #     # validation loop
-        #     val_loss, val_acc = 0.0, 0.0
-        #     self.eval()
-        #     with torch.inference_mode():
-        #         for x, y in test_dataloader:
-        #             x, y = x.to(self.device), y.to(self.device)
-                    
-        #             y_pred = self(x)
-                    
-        #             loss = criterion(y_pred, y)
-        #             val_loss += loss.item()
-                    
-        #             acc = accuracy(y_pred, y)
-        #             val_acc += acc
-
-        #         val_loss /= len(test_dataloader)
-        #         val_acc /= len(test_dataloader)
-            
-        #     print(f"Epoch: {epoch+1} | Train loss: {train_loss: .5f} | Train acc: {train_acc: .5f} | Val loss: {val_loss: .5f} | Val acc: {val_acc: .5f}")
-        
+    
     def test_model(self, test_dataloader, criterion, accuracy):
         test_loss, test_acc = 0, 0
 

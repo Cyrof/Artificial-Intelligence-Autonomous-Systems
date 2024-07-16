@@ -150,22 +150,6 @@ def nb(args):
   else: 
     raise UnknownArgs("Unknown argument used for --mode.")
 
-def calculate_acc(model, dataloader):
-  model.eval()
-  predicted_values = model.predict(dataloader)
-  correct = 0
-  total = 0
-  idx = 0
-  with torch.no_grad():
-    for inputs, labels in tqdm(dataloader):
-      batch_size = labels.size(0)
-      preds = predicted_values[idx:idx + batch_size]
-      idx += batch_size
-      total += batch_size
-      correct += (torch.tensor(preds) == labels.cpu()).sum().item()
-  acc = 100 * correct / total 
-  print(f"Accuracy of the network on the test images: {acc:.2f}%")
-  
 def alt_cnn(args):
   alt_loader = ALTDataLoader(args.data_dir, args.mode)
   criterion = nn.CrossEntropyLoss()
@@ -174,48 +158,66 @@ def alt_cnn(args):
 
   
   if args.mode == "train":
-    # param_grid = {
-    #   'batch_size': [32, 64, 128],
-    #   'learning_rate': [0.001, 0.01, 0.1],
-    #   'epoch': [8, 16, 32, 64]
-    # }
-    # best_acc = 0
-    # best_params = {}
+    prompt_str = """
+      Training CNN model
 
-    # param_combinations = list(ParameterGrid(param_grid))
-    # print(f"Total parameter combinations to try: {len(param_combinations)}")
+      Choose an option: 
+      (1) User predifined best hyperparameters
+      (2) Perform dynamic hyperparameter tuning
 
-    # for params in tqdm(ParameterGrid(param_grid), desc="Grid Search"):
-    #   print(f"\nTrying parameters: {params}")
-    #   train_dataloader = DataLoader(alt_loader, batch_size=params['batch_size'], shuffle=True)
-    #   test_dataloader = DataLoader(ALTDataLoader(args.data_dir, "val"), batch_size=params['batch_size'], shuffle=True)
-    #   cnn = ALTModel()
-    #   optimiser = optim.Adam(cnn.parameters(), lr=params['learning_rate'])
-    #   cnn.train_model(train_dataloader, test_dataloader, epochs=params['epoch'], criterion=criterion, optimiser=optimiser, accuracy=accuracy)
+      Note: 
+      Option (1) will train the model using a set of predifined hyperparameters known to work well.
+      Option (2) will perform a thorough search over multiple combinations of hyperparameters to find the best ones.
+      WARNING: Dynamic hyperparameter tuning can take a significant amount of time depending on your system's capabilities.
 
-    #   current_acc = cnn.test_model(test_dataloader, criterion, accuracy)
-    #   print(f"Current accuracy: {current_acc:.5f}")
-
-    #   if current_acc > best_acc:
-    #     best_acc = current_acc
-    #     best_params = params
-    #     save_to_file(cnn, 'cnn')
+      Please enter 1 or 2:
+    """
     
-    # print(f"Best parameters: {best_params}")
-    # print(f"Best accuracy: {best_acc}")
-    train_dataloader = DataLoader(alt_loader, batch_size=32, shuffle=True, num_workers=4, pin_memory=True)
-    test_dataloader = DataLoader(ALTDataLoader(args.data_dir, "val"), batch_size=32, shuffle=True, num_workers=4, pin_memory=True)
-    # test_dataloader = DataLoader(alt_loader[1], batch_size=args.batch_size, shuffle=True)
-    cnn = ALTModel()
-    optimiser = optim.Adam(cnn.parameters(), lr=0.001)
-    cnn.train_model(train_dataloader, test_dataloader, 15, criterion, optimiser, accuracy)
+    user_choice = input(prompt_str)
+
+    if user_choice == '2':
+      param_grid = {
+        'batch_size': [32, 64, 128],
+        'learning_rate': [0.001, 0.01, 0.1],
+        'epoch': [8, 16, 32, 64]
+      }
+      best_acc = 0
+      best_params = {}
+
+      param_combinations = list(ParameterGrid(param_grid))
+      print(f"Total parameter combinations to try: {len(param_combinations)}")
+
+      for params in tqdm(ParameterGrid(param_grid), desc="Grid Search"):
+        print(f"\nTrying parameters: {params}")
+        train_dataloader = DataLoader(alt_loader, batch_size=params['batch_size'], shuffle=True)
+        test_dataloader = DataLoader(ALTDataLoader(args.data_dir, "val"), batch_size=params['batch_size'], shuffle=True)
+        cnn = ALTModel()
+        optimiser = optim.Adam(cnn.parameters(), lr=params['learning_rate'])
+        cnn.train_model(train_dataloader, test_dataloader, epochs=params['epoch'], criterion=criterion, optimiser=optimiser, accuracy=accuracy)
+
+        current_acc = cnn.test_model(test_dataloader, criterion, accuracy)
+        print(f"Current accuracy: {current_acc:.5f}")
+
+        if current_acc > best_acc:
+          best_acc = current_acc
+          best_params = params
+          save_to_file(cnn, 'cnn')
+      
+      print(f"Best parameters: {best_params}")
+      print(f"Best accuracy: {best_acc}")
     
-    save_to_file(cnn, 'cnn')
+    elif user_choice == '1':
+      train_dataloader = DataLoader(alt_loader, batch_size=32, shuffle=True, num_workers=4, pin_memory=True)
+      test_dataloader = DataLoader(ALTDataLoader(args.data_dir, "val"), batch_size=32, shuffle=True, num_workers=4, pin_memory=True)
+      cnn = ALTModel()
+      optimiser = optim.Adam(cnn.parameters(), lr=0.001)
+      cnn.train_model(train_dataloader, test_dataloader, 15, criterion, optimiser, accuracy)
+      
+      save_to_file(cnn, 'cnn')
     
   elif args.mode =="test":
     test_dataloader = DataLoader(alt_loader, batch_size=32, shuffle=False)
     cnn = import_model('cnn')
-    # calculate_acc(cnn, dataloader)
     cnn.test_model(test_dataloader, criterion, accuracy)
     
   else: 
