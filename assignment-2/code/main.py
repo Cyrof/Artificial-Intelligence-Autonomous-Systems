@@ -189,8 +189,8 @@ def alt_cnn(args):
 
       for params in tqdm(ParameterGrid(param_grid), desc="Grid Search"):
         print(f"\nTrying parameters: {params}")
-        train_dataloader = DataLoader(alt_loader, batch_size=params['batch_size'], shuffle=True)
-        test_dataloader = DataLoader(ALTDataLoader(args.data_dir, "val"), batch_size=params['batch_size'], shuffle=True)
+        train_dataloader = DataLoader(alt_loader, batch_size=params['batch_size'], shuffle=True, num_workers=6, pin_memory=True, prefetch_factor=2)
+        test_dataloader = DataLoader(ALTDataLoader(args.data_dir, "val"), batch_size=params['batch_size'], shuffle=True, num_workers=6, pin_memory=True, prefetch_factor=2)
         cnn = ALTModel()
         optimiser = optim.Adam(cnn.parameters(), lr=params['learning_rate'])
         cnn.train_model(train_dataloader, test_dataloader, epochs=params['epoch'], criterion=criterion, optimiser=optimiser, accuracy=accuracy)
@@ -207,8 +207,8 @@ def alt_cnn(args):
       print(f"Best accuracy: {best_acc}")
     
     elif user_choice == '1':
-      train_dataloader = DataLoader(alt_loader, batch_size=32, shuffle=True, num_workers=4, pin_memory=True)
-      test_dataloader = DataLoader(ALTDataLoader(args.data_dir, "val"), batch_size=32, shuffle=True, num_workers=4, pin_memory=True)
+      train_dataloader = DataLoader(alt_loader, batch_size=64, shuffle=True, num_workers=6, pin_memory=True, prefetch_factor=2)
+      test_dataloader = DataLoader(ALTDataLoader(args.data_dir, "val"), batch_size=64, shuffle=True, num_workers=6, pin_memory=True, prefetch_factor=2)
       cnn = ALTModel()
       optimiser = optim.Adam(cnn.parameters(), lr=0.001)
       cnn.train_model(train_dataloader, test_dataloader, 15, criterion, optimiser, accuracy)
@@ -216,7 +216,7 @@ def alt_cnn(args):
       save_to_file(cnn, 'cnn')
     
   elif args.mode =="test":
-    test_dataloader = DataLoader(alt_loader, batch_size=32, shuffle=False)
+    test_dataloader = DataLoader(alt_loader, batch_size=32, shuffle=False, num_workers=6, pin_memory=True, prefetch_factor=2)
     cnn = import_model('cnn')
     cnn.test_model(test_dataloader, criterion, accuracy)
     
