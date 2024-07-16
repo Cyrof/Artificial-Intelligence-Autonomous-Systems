@@ -9,6 +9,7 @@ import torch.optim as optim
 import torch.nn.functional as F
 from torch.cuda.amp import GradScaler, autocast
 from tqdm import tqdm
+from earlystop import *
 
 class ALTModel(nn.Module):
     """
@@ -44,6 +45,7 @@ class ALTModel(nn.Module):
         return self.classifier(self.feature(x))
     
     def train_model(self, train_dataloader, test_dataloader, epochs, criterion, optimiser, accuracy):
+        early_stopping = EarlyStopping(patience=5, min_delta=0.01)
         accuracy = accuracy.to(self.device)
         self = self.to(self.device)
         scaler = GradScaler()
@@ -83,11 +85,16 @@ class ALTModel(nn.Module):
                     
                     val_loss += loss.item()
                     val_acc += accuracy(y_pred, y)
+
+                    if early_stopping(val_loss):
+                        break
                 
                 val_loss /= len(test_dataloader)
                 val_acc /= len(test_dataloader)
+
+                
             
-            print(f"Epoch: {epoch+1} | Train loss: {train_loss: .5f} | Train acc: {train_acc: .5f} | Val loss: {val_loss: .5f} | Val acc: {val_acc: .5f}")
+            print(f"\nEpoch: {epoch+1} | Train loss: {train_loss: .5f} | Train acc: {train_acc: .5f} | Val loss: {val_loss: .5f} | Val acc: {val_acc: .5f}")
 
     
     def test_model(self, test_dataloader, criterion, accuracy):

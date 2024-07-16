@@ -17,46 +17,8 @@ from tqdm import tqdm
 import torch
 from torchmetrics import Accuracy
 import pickle
-from errors import *
 from sklearn.model_selection import ParameterGrid
-
-def save_to_file(model, filename):
-  """
-  Saves the m odel to a specified file.
-  
-  Parameters: 
-  model (object): The model to save.
-  filename (str): The name of the file to save the model to.
-  """
-  dir_path = f"{os.path.dirname(os.path.realpath(__file__))}/models"
-  path = f"{dir_path}/{filename}.pkl"
-
-  # create the directory if it doesn't exist
-  if not os.path.exists(dir_path):
-    os.makedirs(dir_path)
-
-  # save the model to the specified path
-  with open(path, 'wb') as f: 
-    pickle.dump(model, f)
-  
-  print(f"Model saved to {path}")
-
-def import_model(filename):
-  """
-  Imports a model from a specified file.
-  
-  Parameters:
-  filename (str): The name of the file to import the model from.
-  
-  Returns: 
-  object: The imported model.
-  """
-  path = f"{os.path.dirname(os.path.realpath(__file__))}/models/{filename}.pkl"
-  with open(path, 'rb') as f:
-    model = pickle.load(f)
-  f.close()
-  print(f"Model imported from {path}")
-  return model
+from utils import *
 
 def prepare_data(x, y):
   """
@@ -95,22 +57,6 @@ def process_data(dataloader):
 
   return x_train, y_train, x_val, y_val, x_test, y_test
 
-def evaluate_model(model, x, y, dataset_name):
-  """
-  Evaluates the model on a given dataset.
-  
-  Parameters: 
-  model (object): The model to evaluate.
-  x (torch.Tensor): The input data.
-  y (torch.Tensor): The labels.
-  dataset_name (str): The name of the dataset.
-  """
-  y_pred = model.predict(x)
-  print(y_pred)
-  accuracy = torch.mean((y_pred == y).float())
-  print(f"\n{dataset_name} Accuracy: {accuracy * 100:.2f}%")
-  return accuracy
-
 def nb(args):
   """
   Trains or tests the Naive Bayes model based on the provided arguments. 
@@ -144,19 +90,17 @@ def nb(args):
     try:
       nb = import_model("naive_bayes")
     except FileNotFoundError:
-      raise RuntimeError("No Naive bayes model trained. Please run with mode=train first.")
-    evaluate_model(nb, x_val, y_val, "Validation")
-    evaluate_model(nb, x_test, y_test, "Test")
+      raise RuntimeError("No Naive bayes model trained. Please run with `--mode train` first.")
+    nb.test_model(x_val, y_val, "Validation")
+    nb.test_model(x_test, y_test, "Test")
   else: 
-    raise UnknownArgs("Unknown argument used for --mode.")
+    raise ValueError("Unknown argument used for --mode.")
 
 def alt_cnn(args):
   alt_loader = ALTDataLoader(args.data_dir, args.mode)
   criterion = nn.CrossEntropyLoss()
   accuracy = Accuracy(task="multiclass", num_classes=10)
 
-
-  
   if args.mode == "train":
     prompt_str = """
       Training CNN model
@@ -217,11 +161,14 @@ def alt_cnn(args):
     
   elif args.mode =="test":
     test_dataloader = DataLoader(alt_loader, batch_size=32, shuffle=False, num_workers=6, pin_memory=True, prefetch_factor=2)
-    cnn = import_model('cnn')
+    try:
+      cnn = import_model('cnn')
+    except FileNotFoundError:
+      raise RuntimeError("No CNN model trained. Please run with `--mode train` first.")
     cnn.test_model(test_dataloader, criterion, accuracy)
     
   else: 
-    raise UnknownArgs("Unknown argument used for --mode.")
+    raise ValueError("Unknown argument used for --mode.")
   
 USAGE_STRING = """
   USAGE:      python main.py <options>

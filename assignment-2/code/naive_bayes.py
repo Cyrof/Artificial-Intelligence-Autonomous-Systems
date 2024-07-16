@@ -73,6 +73,23 @@ class NaiveBayes:
         self.class_probs = self.calculate_class_probs(y_train)
         self.feature_probs = self.calculate_feature_probs(x_train, y_train)
 
+    def test_model(self, x, y, dataset_name):
+        num_samples, num_features = x.shape
+        num_classes = len(self.class_probs)
+
+        log_probs = torch.log(self.class_probs).view(1, -1).repeat(num_samples, 1)
+
+        for cls in tqdm(range(num_classes), desc="Predicting"):
+            # Add log probabilities for features being 0
+            log_probs[:, cls] += torch.sum(torch.log(self.feature_probs[cls, :, 0]) * (1 - x), dim=1)
+            # Add log probabilities for features being 1 
+            log_probs[:, cls] += torch.sum(torch.log(self.feature_probs[cls, :, 1]) * x, dim=1)
+
+        predictions = torch.argmax(log_probs, dim=1)
+
+        accuracy = torch.mean((predictions == y).float())
+        print(f"\n{dataset_name} Accuracy: {accuracy * 100:.2f}%")
+
     def predict(self, x_test):
         """
         Predict the class labels for test sample.
