@@ -10,6 +10,8 @@ import torch.nn.functional as F
 from torch.cuda.amp import GradScaler, autocast
 from tqdm import tqdm
 from earlystop import *
+from sklearn.metrics import f1_score, confusion_matrix, precision_score, recall_score
+import numpy as np
 
 class ALTModel(nn.Module):
     """
@@ -102,7 +104,8 @@ class ALTModel(nn.Module):
 
         accuracy.to(self.device)
         self.to(self.device)
-
+        all_predictions = []
+        all_labels = []
         self.eval()
         with torch.inference_mode():
             for x, y in test_dataloader:
@@ -112,10 +115,35 @@ class ALTModel(nn.Module):
                 
                 test_loss += criterion(y_pred, y)
                 test_acc += accuracy(y_pred, y)
+
+                all_predictions.append(torch.argmax(y_pred, dim=1).cpu().numpy())
+                all_labels.append(y.cpu().numpy())
             
             test_loss /= len(test_dataloader)
             test_acc /= len(test_dataloader)
         
-        print(f"Test loss: {test_loss: .5f}| Test acc:{test_acc: .5f}%")
-        return test_acc
+        all_predictions = np.concatenate(all_predictions)
+        all_labels = np.concatenate(all_labels)
+        f1 = f1_score(all_labels, all_predictions, average='weighted')
+        conf_matrix = confusion_matrix(all_labels, all_predictions)
+        precision = precision_score(all_labels, all_predictions, average='weighted')
+        recall = recall_score(all_labels, all_predictions, average='weighted')
         
+        print(f"\nTest loss: {test_loss: .5f}| Test acc:{test_acc: .5f}%")
+        print(f"Test F1 Score: {f1:.2f}%")
+        print(f"Test Precision: {precision:.2f}%")
+        print(f"Test Recall: {recall:.2f}%")
+        print(f"Test Confusion Matrix:\n{conf_matrix}\n")
+
+        return test_acc, f1, conf_matrix, precision, recall
+
+    def predict(self, dataloader):
+        self.eval()
+        all_predictions = []
+        with torch.inference_mode():
+            for x, _ in dataloader:
+                x = x.to(self.device)
+                y_pred = self(x)
+                predicted_class = torch.argmax(y_pred, dim=1)
+                all_predictions.append(predicted_class.cpu())
+        return torch.cat(all_predictions, dim=0)
