@@ -76,20 +76,3 @@ if __name__ == "__main__":
   print("Doing classification")
   print("--------------------")
   print("classifier:\t" + str(args.classifier))
-
-  if not args.compare:
-    if args.classifier == "nb":
-      nb(args)
-    else:
-      alt_cnn(args)
-  else:
-    compare_models(args)
-
-
-
-     
-
-     
-
-
-
