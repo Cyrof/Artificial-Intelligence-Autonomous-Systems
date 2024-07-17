@@ -93,6 +93,8 @@ def nb(args):
       raise RuntimeError("No Naive bayes model trained. Please run with `--mode train` first.")
     nb.test_model(x_val, y_val, "Validation")
     nb.test_model(x_test, y_test, "Test")
+    print(f"The predicted values for validation: {nb.predict(x_val)}")
+    print(f"The predicted values for test: {nb.predict(x_test)}")
   else: 
     raise ValueError("Unknown argument used for --mode.")
 
@@ -166,34 +168,73 @@ def alt_cnn(args):
     except FileNotFoundError:
       raise RuntimeError("No CNN model trained. Please run with `--mode train` first.")
     cnn.test_model(test_dataloader, criterion, accuracy)
+    predicted = cnn.predict(test_dataloader)
+    print(f"Predicted classes: {predicted}")
     
   else: 
     raise ValueError("Unknown argument used for --mode.")
   
+def compare_models(args):
+  nb_loader = NBDataLoader(args.data_dir)
+  x_train, y_train, x_val, y_val, x_test, y_test = process_data(nb_loader)
+  try:
+    nb = import_model("naive_bayes")
+  except FileNotFoundError:
+    raise RuntimeError("No Naive bayes model trained. Please run with `--mode train` first.")
+  print("Evaluating Naive Bayes Model...")
+  nb_acc, nb_f1, nb_conf, nb_precision, nb_recall = nb.test_model(x_test, y_test, "Test")
+  plot_confusion_matrix(nb_conf, 'Naive Bayes')
+  # plot_precision_recall(nb_precision, nb_recall, "Naive Bayes")
+
+  alt_loader = ALTDataLoader(args.data_dir, "test")
+  criterion = nn.CrossEntropyLoss()
+  accuracy = Accuracy(task="multiclass", num_classes=10)
+  test_dataloader = DataLoader(alt_loader, batch_size=32, shuffle=False, num_workers=6, pin_memory=True, prefetch_factor=2)
+  try:
+    cnn = import_model('cnn')
+  except FileNotFoundError:
+    raise RuntimeError("No CNN model trained. Please run with `--mode train` first.")
+  print("\nEvaluating CNN Model...")
+  cnn_acc, cnn_f1, cnn_conf, cnn_precision, cnn_recall = cnn.test_model(test_dataloader, criterion, accuracy)
+  plot_confusion_matrix(cnn_conf, 'CNN')
+  # plot_precision_recall(cnn_precision, cnn_recall, "CNN")
+
+  if nb_acc > cnn_acc:
+    print(f"\nNaive bayes performs better on the test set.")
+  else:
+    print(f"\nCNN performs better on the test set.")
+
+
+
 USAGE_STRING = """
   USAGE:      python main.py <options>
   EXAMPLES:   (1) python main.py --c nb --d digitdata --mode train
                   - trains the naive bayes classifier on the digit dataset
               (2) python main.py --classifier alt  --data_dir digitdata --mode train 
                   - trains the alternative model
+              (3) Python main.py --compare --d digitdata 
                   """
   
 
 if __name__ == "__main__":
   parser = ArgumentParser(USAGE_STRING)
-  parser.add_argument('-c', '--classifier', help='The type of classifier', choices=['nb', 'alt'], required=True)
+  parser.add_argument('-c', '--classifier', help='The type of classifier', choices=['nb', 'alt'], required=False)
   parser.add_argument('-d', '--data_dir', help='the dataset folder name', type=str, required=True)
-  parser.add_argument('-m', '--mode', help='train, val or test', type=str, required=True)
+  parser.add_argument('-m', '--mode', help='train, val or test', type=str, required=False)
+  parser.add_argument('--compare', action='store_true', help='Compare the Naive Bayes and CNN models')
   args = parser.parse_args()
 
   print("Doing classification")
   print("--------------------")
-  print("classifier:\t" + args.classifier)
+  print("classifier:\t" + str(args.classifier))
 
-  if args.classifier == "nb":
-    nb(args)
+  if not args.compare:
+    if args.classifier == "nb":
+      nb(args)
+    else:
+      alt_cnn(args)
   else:
-    alt_cnn(args)
+    compare_models(args)
 
 
 
