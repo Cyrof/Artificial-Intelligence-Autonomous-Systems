@@ -3,3 +3,6 @@ assess1/
 assess2/
 *.sh
 tut4-venv/
+*.pkl
+*.png
+*.jpg

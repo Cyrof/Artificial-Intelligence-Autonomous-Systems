@@ -15,7 +15,10 @@ import torch.nn as nn
 import torch.optim as optim
 from tqdm import tqdm
 import torch
+from torchmetrics import Accuracy
 import pickle
+from sklearn.model_selection import ParameterGrid
+from utils import *
 
 def nb(args):
   """
@@ -50,48 +53,26 @@ def nb(args):
     try:
       nb = import_model("naive_bayes")
     except FileNotFoundError:
-      raise RuntimeError("No Naive bayes model trained. Please run with mode=train first.")
-    evaluate_model(nb, x_val, y_val, "Validation")
-    evaluate_model(nb, x_test, y_test, "Test")
-  else: 
-    raise UnknownArgs("Unknown argument used for --mode.")
-  
+
 
 USAGE_STRING = """
   USAGE:      python main.py <options>
   EXAMPLES:   (1) python main.py --c nb --d digitdata --mode train
                   - trains the naive bayes classifier on the digit dataset
-              (2) python main.py --classifier alt  --data_dir digitdata --mode train --batch_size 64 --epoch 5 --learning_rate 0.0001
+              (2) python main.py --classifier alt  --data_dir digitdata --mode train 
                   - trains the alternative model
+              (3) Python main.py --compare --d digitdata 
                   """
   
 
 if __name__ == "__main__":
   parser = ArgumentParser(USAGE_STRING)
-  parser.add_argument('-c', '--classifier', help='The type of classifier', choices=['nb', 'alt'], required=True)
+  parser.add_argument('-c', '--classifier', help='The type of classifier', choices=['nb', 'alt'], required=False)
   parser.add_argument('-d', '--data_dir', help='the dataset folder name', type=str, required=True)
-  parser.add_argument('-m', '--mode', help='train, val or test', type=str, required=True)
-  parser.add_argument('-b', '--batch_size', help='batch size', type=int)
-  parser.add_argument('-e', '--epoch', help='number of epochs', type=int)
-  parser.add_argument('-l', '--learning_rate', help='learning rate', type=float)
+  parser.add_argument('-m', '--mode', help='train, val or test', type=str, required=False)
+  parser.add_argument('--compare', action='store_true', help='Compare the Naive Bayes and CNN models')
   args = parser.parse_args()
 
   print("Doing classification")
   print("--------------------")
-  print("classifier:\t" + args.classifier)
-
-  if args.classifier == "nb":
-    nb(args)
-  else:
-    """
-    choose the alternative model
-    """
-
-
-
-     
-
-     
-
-
-
+  print("classifier:\t" + str(args.classifier))
