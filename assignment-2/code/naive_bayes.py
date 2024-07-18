@@ -6,6 +6,7 @@
 import numpy as np
 from tqdm import tqdm
 import torch
+from sklearn.metrics import f1_score, confusion_matrix, precision_score, recall_score
 
 class NaiveBayes:
     def __init__(self, smoothing_factor=1.0):
@@ -73,6 +74,33 @@ class NaiveBayes:
         self.class_probs = self.calculate_class_probs(y_train)
         self.feature_probs = self.calculate_feature_probs(x_train, y_train)
 
+    def test_model(self, x, y, dataset_name):
+        num_samples, num_features = x.shape
+        num_classes = len(self.class_probs)
+
+        log_probs = torch.log(self.class_probs).view(1, -1).repeat(num_samples, 1)
+
+        for cls in tqdm(range(num_classes), desc="Predicting"):
+            # Add log probabilities for features being 0
+            log_probs[:, cls] += torch.sum(torch.log(self.feature_probs[cls, :, 0]) * (1 - x), dim=1)
+            # Add log probabilities for features being 1 
+            log_probs[:, cls] += torch.sum(torch.log(self.feature_probs[cls, :, 1]) * x, dim=1)
+
+        predictions = torch.argmax(log_probs, dim=1)
+        accuracy = torch.mean((predictions == y).float())
+        f1 = f1_score(y, predictions, average='weighted')
+        conf_matrix = confusion_matrix(y, predictions)
+        precision = precision_score(y, predictions, average='weighted')
+        recall = recall_score(y, predictions, average='weighted')
+        print(f"\n{dataset_name} Accuracy: {accuracy * 100:.2f}%")
+        print(f"{dataset_name} F1 Score: {f1:.2f}%")
+        print(f"{dataset_name} Precision: {precision:.2f}%")
+        print(f"{dataset_name} Recall: {recall:.2f}%")
+        print(f"{dataset_name} Confusion Matrix:\n{conf_matrix}\n")
+
+
+        return accuracy, f1, conf_matrix, precision, recall
+
     def predict(self, x_test):
         """
         Predict the class labels for test sample.
@@ -90,7 +118,7 @@ class NaiveBayes:
         # Initialise log probabilities with the class probabilities 
         log_probs = torch.log(self.class_probs).view(1, -1).repeat(num_samples, 1)
 
-        for cls in tqdm(range(num_classes), desc="Predicting"):
+        for cls in range(num_classes):
             # Add log probabilities for features being 0
             log_probs[:, cls] += torch.sum(torch.log(self.feature_probs[cls, :, 0]) * (1 - x_test), dim=1)
             # Add log probabilities for features being 1 

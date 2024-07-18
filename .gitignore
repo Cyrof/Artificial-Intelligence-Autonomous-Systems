@@ -3,3 +3,9 @@ assess1/
 assess2/
 *.sh
 tut4-venv/
+*.pkl
+*.png
+*.jpg
+lab5
+*.ipynb_checkpoints/
+*.vscode/
