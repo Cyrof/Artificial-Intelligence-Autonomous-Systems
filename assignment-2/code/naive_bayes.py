@@ -9,12 +9,20 @@ import torch
 from sklearn.metrics import f1_score, confusion_matrix, precision_score, recall_score
 
 class NaiveBayes:
+    """
+    Naive Bayes classifier for binary features with Laplace smoothing.
+
+    Parameters: 
+    class_probs (torch.Tensor): Prior probabilities for each class.
+    feature_probs (torch.Tensor): Conditional probabilities for each feature given the class.
+    smoothing_factor (float): Smoothing factor for Laplace smoothing.
+    """
     def __init__(self, smoothing_factor=1.0):
         """
-        Args:
-        1. smoothing_factor: Laplace smoothing factor to handle zero probabilities.
-        2. class_probs: the prior probabilities for each class.
-        3. feature_probs: the conditional probabilities for each feature given the class.
+        Initialise the NaiveBayes object.
+
+        Parameters: 
+        smoothing_factor (float): Smoothing factor for Laplace smoothing.
         """
         self.class_probs = None
         self.feature_probs = None
@@ -24,11 +32,11 @@ class NaiveBayes:
         """
         Calculate the prior probabilities for each class.
 
-        Args:
-        y_train: Training labels.
-    
-        Returns:
-        class_probs: Array of prior probabilities for each class.
+        Parameters: 
+        y_train (torch.Tensor): Training labels.
+
+        Returns: 
+        class_probs (torch.Tensor): Array of prior probabilities for each class.
         """
         num_classes = len(torch.unique(y_train))
         class_probs = torch.zeros(num_classes)
@@ -43,12 +51,12 @@ class NaiveBayes:
         """
         Calculate the conditional probabilities for each feature given the class.
     
-        Args:
-        x_train: Training features.
-        y_train: Training labels.
+        Parameters:
+        x_train (torch.Tensor): Training features.
+        y_train (torch.Tensor): Training labels.
     
         Returns:
-        feature_probs: Array of conditional probabilities for each feature and class.
+        feature_probs (torch.Tensor): Array of conditional probabilities for each feature and class.
         """
         num_classes = len(torch.unique(y_train))
         _ , num_features = x_train.shape
@@ -67,14 +75,26 @@ class NaiveBayes:
         """
         Train the NaiveBayes classifier. Do not modify this method.
     
-        Args:
-        x_train: Training features.
-        y_train: Training labels.
+        Parameters:
+        x_train (torch.Tensor): Training features.
+        y_train (torch.Tensor): Training labels.
         """
         self.class_probs = self.calculate_class_probs(y_train)
         self.feature_probs = self.calculate_feature_probs(x_train, y_train)
 
     def test_model(self, x, y, dataset_name):
+        """
+        Test the NaiveBayes classifier and print evaluation metrics.
+
+        Paramters:
+        x (torch.Tensor): Testing features.
+        y (torch.Tensor): Testing labels.
+        dataset_name (str): Name of the dataset for which the evaluation metrics are being printed.
+
+        Returns:
+        tuple: Tuple containing accuracy, F1 score, confusion matrix, precision, and recall.
+
+        """
         num_samples, num_features = x.shape
         num_classes = len(self.class_probs)
 
@@ -105,11 +125,11 @@ class NaiveBayes:
         """
         Predict the class labels for test sample.
     
-        Args:
-        x_test: Test features.
+        Parameters:
+        x_test (torch.Tensor): Test features.
     
         Returns:
-        predictions: Predicted class labels for test features.
+        tuple: Tuple containing predicted class labels and scores (probabilities).
         """    
 
         num_samples, num_features = x_test.shape
@@ -125,5 +145,6 @@ class NaiveBayes:
             log_probs[:, cls] += torch.sum(torch.log(self.feature_probs[cls, :, 1]) * x_test, dim=1)
 
         predictions = torch.argmax(log_probs, dim=1)
+        scores = torch.exp(log_probs) # convert log-probabilities to probabilities
 
-        return predictions
+        return predictions, scores

@@ -16,11 +16,18 @@ import numpy as np
 class ALTModel(nn.Module):
     """
     A custom PyTorch model for your alternative neural network-based model.
+
+    Attributes: 
+    device (str): The device to use ('cuda' or 'cpu')
+    feature (nn.Sequential): Sequential module for feature extraction.
+    classifier (nn.Sequential): Sequential module for classification.
     """
     def __init__(self):
+        """
+        Initialise the ALTModel object.
+        """
         super(ALTModel, self).__init__()
         self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        # print(f"Using {self.device}")
         self.feature = nn.Sequential(
             # 1
             nn.Conv2d(in_channels=1, out_channels=6, kernel_size=5, stride=1, padding=2), # 28*28-->32*32-->28*28
@@ -43,10 +50,30 @@ class ALTModel(nn.Module):
         )
     
     def forward(self, x):
+        """
+        Defines the forward pass of the model.
+
+        Parameters: 
+        x (torch.Tensor): Input tensor.
+
+        Returns: 
+        y_pred (torch.Tensor): Predicted labels.
+        """
         x = x.view(-1, 1, 28, 28)
         return self.classifier(self.feature(x))
     
     def train_model(self, train_dataloader, test_dataloader, epochs, criterion, optimiser, accuracy):
+        """
+        Trains the ALTModel using the provided data and evaluation criteria.
+
+        Parameters:
+        train_dataloader (DataLoader): DataLoader for training data.
+        test_dataloader (DataLoader): DataLoader for testing data.
+        epoch (int): Number of training epochs.
+        criterion (nn.CrossEntropyLoss): Loss function.
+        optimiser (torch.optim.Optimizer): Optimiser for training.
+        accuracy (torch.nn.Module): Accuracy function for evaluation.
+        """
         early_stopping = EarlyStopping(patience=5, min_delta=0.01)
         accuracy = accuracy.to(self.device)
         self = self.to(self.device)
@@ -100,6 +127,17 @@ class ALTModel(nn.Module):
 
     
     def test_model(self, test_dataloader, criterion, accuracy):
+        """
+        Evaluate the ALTModel on test data and print performance metrics.
+
+        Parameters:
+        test_dataloader (DataLoader): DataLoader for testing data.
+        criterion (nn.CrossEntropyLoss): Loss function.
+        accuracy (torch.nn.Module): Accuracy function for evaluation.
+
+        Returns: 
+        tuple: Tuple containing test accuracy, F1 score, confusion matrix, precision, and recall.
+        """
         test_loss, test_acc = 0, 0
 
         accuracy.to(self.device)
@@ -138,12 +176,24 @@ class ALTModel(nn.Module):
         return test_acc, f1, conf_matrix, precision, recall
 
     def predict(self, dataloader):
+        """
+        Generate perfictions and scores for data using the ALTModel. 
+
+        Parameters: 
+        dataloader (DataLoader): DataLoader for input data.
+
+        Returns: 
+        tuple: Tuple containing predicted classes and scores.
+        """
         self.eval()
         all_predictions = []
+        all_scores = []
         with torch.inference_mode():
             for x, _ in dataloader:
                 x = x.to(self.device)
                 y_pred = self(x)
                 predicted_class = torch.argmax(y_pred, dim=1)
                 all_predictions.append(predicted_class.cpu())
-        return torch.cat(all_predictions, dim=0)
+                all_scores.append(y_pred.cpu())
+                
+        return torch.cat(all_predictions, dim=0), torch.cat(all_scores, dim=0)
