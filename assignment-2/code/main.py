@@ -33,7 +33,7 @@ def prepare_data(x, y):
   """
   x = torch.tensor(x, dtype=torch.float32)
   y = torch.tensor(y, dtype=torch.int64)
-  x = (x.view(x.size(0), -1) > 127).int()
+  x = (x.view(x.size(0), -1) > 127).int() # binarise pixel values
   return x, y
 
 def process_data(dataloader):
@@ -58,6 +58,18 @@ def process_data(dataloader):
   return x_train, y_train, x_val, y_val, x_test, y_test
 
 def evaluate_model(model, x, y, dataset_name):
+  """
+  Evaluates the model on the given dataset and prints accuracy.
+
+  Parameters: 
+  model (NaiveBayes): The trained Naive Bayes model.
+  x (torch.Tensor): Testing features.
+  y (torch.Tensor): Testing labels.
+  dataset_name (str): The name of the dataset (e.g., "Train", "Test", "Validation").
+
+  Returns: 
+  accuracy (float): The accuracy of the model on the given dataset.
+  """
   y_pred, _ = model.predict(x)
   accuracy = torch.mean((y_pred == y).float())
   print(f"\n{dataset_name} Accuracy: {accuracy * 100:.2f}%")
@@ -80,7 +92,6 @@ def nb(args):
       print(f"Testing smoothing factor: {sf}")
       nb = NaiveBayes(smoothing_factor=sf)
       nb.train(x_train, y_train)
-      # val_accuracy, _, _, _, _ = nb.test_model(x_val, y_val, "val")
       val_accuracy = evaluate_model(nb, x_val, y_val, "Validation")
 
       if val_accuracy > best_accuracy:
@@ -106,6 +117,12 @@ def nb(args):
     raise ValueError("Unknown argument used for --mode.")
 
 def alt_cnn(args):
+  """
+  Trains or tests the CNN model based on the provided arguments. 
+
+  Parameters: 
+  args (Namespace): The command-line arguments.
+  """
   alt_loader = ALTDataLoader(args.data_dir, args.mode)
   criterion = nn.CrossEntropyLoss()
   accuracy = Accuracy(task="multiclass", num_classes=10)
@@ -182,6 +199,12 @@ def alt_cnn(args):
     raise ValueError("Unknown argument used for --mode.")
   
 def compare_models(args):
+  """
+  Compares the Naive Bayes and CNN models based on their performance matrics.
+
+  Parameters: 
+  args (Namespace): The command-line arguments.
+  """
   nb_loader = NBDataLoader(args.data_dir)
   x_train, y_train, x_val, y_val, x_test, y_test = process_data(nb_loader)
 
