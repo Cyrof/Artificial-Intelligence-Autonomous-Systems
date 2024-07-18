@@ -125,5 +125,7 @@ class NaiveBayes:
             log_probs[:, cls] += torch.sum(torch.log(self.feature_probs[cls, :, 1]) * x_test, dim=1)
 
         predictions = torch.argmax(log_probs, dim=1)
+        # scores = torch.max(log_probs, dim=1).values
+        scores = torch.exp(log_probs)
 
-        return predictions
+        return predictions, scores

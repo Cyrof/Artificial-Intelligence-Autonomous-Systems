@@ -140,10 +140,13 @@ class ALTModel(nn.Module):
     def predict(self, dataloader):
         self.eval()
         all_predictions = []
+        all_scores = []
         with torch.inference_mode():
             for x, _ in dataloader:
                 x = x.to(self.device)
                 y_pred = self(x)
                 predicted_class = torch.argmax(y_pred, dim=1)
                 all_predictions.append(predicted_class.cpu())
-        return torch.cat(all_predictions, dim=0)
+                all_scores.append(y_pred.cpu())
+                
+        return torch.cat(all_predictions, dim=0), torch.cat(all_scores, dim=0)
