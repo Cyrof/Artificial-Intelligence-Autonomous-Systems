@@ -205,9 +205,9 @@ def compare_models(args):
   Parameters: 
   args (Namespace): The command-line arguments.
   """
+  # naive bayes model evaluations
   nb_loader = NBDataLoader(args.data_dir)
   x_train, y_train, x_val, y_val, x_test, y_test = process_data(nb_loader)
-
   try:
     nb = import_model("naive_bayes")
   except FileNotFoundError:
@@ -220,7 +220,7 @@ def compare_models(args):
   plot_class_wise_metrics(nb_precision, nb_recall, nb_f1, "Naive Bayes", len(nb.class_probs))
   plot_precision_recall_curve(y_test, nb_score, "Naive Bayes", len(nb.class_probs))
 
-
+  # CNN model evaluation
   alt_loader = ALTDataLoader(args.data_dir, "test")
   criterion = nn.CrossEntropyLoss()
   accuracy = Accuracy(task="multiclass", num_classes=10)
@@ -236,6 +236,11 @@ def compare_models(args):
   plot_roc_curve(y_test, cnn_score, "CNN", 10)
   plot_class_wise_metrics(cnn_precision, cnn_recall, cnn_f1, "CNN", 10)
   plot_precision_recall_curve(y_test, cnn_score, "CNN", 10)
+
+  # model comparison
+  plot_acc_comparison(nb_acc, cnn_acc)
+  plot_f1_comparison(nb_f1, cnn_f1)
+  plot_precision_recall_score_comparison(nb_precision, nb_recall, cnn_precision, cnn_recall)
 
   if nb_acc > cnn_acc:
     print(f"\nNaive bayes performs better on the test set.")
