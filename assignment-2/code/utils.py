@@ -60,6 +60,7 @@ def plot_confusion_matrix(cm, model_name):
     disp.plot(colorbar=False)
     plt.title(f"{model_name} Confusion Matrix")
     plt.savefig(f"{dir_path}/{model_name}_confusion_matrix.png")
+    plt.close()
     print(f"Confusion matrix saved to {dir_path}/{model_name}_confusion_matrix.png\n")
 
 def plot_roc_curve(y_true, y_scores, model_name, num_classes):
@@ -102,7 +103,7 @@ def plot_roc_curve(y_true, y_scores, model_name, num_classes):
     plt.title(f'{model_name} ROC Curves')
     plt.legend(loc="lower right")
     plt.savefig(f"{dir_path}/{model_name}_roc_curve.png")
-    plt.show()
+    plt.close()
     print(f"ROC curves saved to {dir_path}/{model_name}_roc_curve.png\n")
 
 
@@ -137,6 +138,7 @@ def plot_class_wise_metrics(precision, recall, f1_score, model_name, num_classes
     plt.legend(loc='best')
     plt.grid()
     plt.savefig(f"{dir_path}/{model_name}_class_wise_metrics.png")
+    plt.close()
     print(f"Class-wise performance metrics saved to {dir_path}/{model_name}_Class_wise_metrics.png\n")
 
 def plot_precision_recall_curve(y_true, y_scores, model_name, num_classes):
@@ -176,5 +178,74 @@ def plot_precision_recall_curve(y_true, y_scores, model_name, num_classes):
     plt.title(f'{model_name} Precision-Recall Curves')
     plt.legend(loc="lower left")
     plt.savefig(f"{dir_path}/{model_name}_precision_recall_curve.png")
-    plt.show()
+    plt.close()
     print(f"Precision-Recall curves saved to {dir_path}/{model_name}_precision_recall_curve.png\n")
+
+def plot_acc_comparison(nb_acc, cnn_acc):
+    dir_path = f"{os.path.dirname(os.path.realpath(__file__))}/plots"
+    if not os.path.exists(dir_path):
+        os.makedirs(dir_path)
+    
+    nb_acc = nb_acc.cpu().numpy()
+    cnn_acc = cnn_acc.cpu().numpy()
+
+    plt.figure(figsize=(12, 6))
+    models = ['Naive Bayes', 'CNN']
+    accuraries = [nb_acc, cnn_acc]
+    
+    plt.bar(models, accuraries, color=['b', 'r'], width=0.5)
+    plt.ylabel("Accuracy")
+    plt.xlabel("Models")
+    plt.title("Model Accuracy Comparison")
+    plt.savefig(f"{dir_path}/acc_comparison.png")
+    plt.close()
+    print(f"Model Accuracy comparison saved to {dir_path}/acc_comparison.png\n")
+ 
+
+def plot_f1_comparison(nb_f1_score, cnn_f1_score):
+    dir_path = f"{os.path.dirname(os.path.realpath(__file__))}/plots"
+    if not os.path.exists(dir_path):
+        os.makedirs(dir_path)
+    
+    # nb_f1_score = nb_f1_score.cpu().numpy()
+    # cnn_f1_score = cnn_f1_score.cpu().numpy()
+
+    plt.figure(figsize=(12, 6))
+    models = ['Naive Bayes', 'CNN']
+    f1_scores = [nb_f1_score, cnn_f1_score]
+
+    plt.bar(models, f1_scores, color=['g', 'r'], width=0.5)
+    plt.ylabel("Scores")
+    plt.xlabel("Models")
+    plt.title("Model F1 Score Comparison")
+    plt.savefig(f"{dir_path}/f1_comparison.png")
+    plt.close()
+    print(f"Model F1 Score comparison saved to {dir_path}/f1_comparison.png\n")
+
+def plot_precision_recall_score_comparison(nb_p_score, nb_r_score, cnn_p_score, cnn_r_score):
+    dir_path = f"{os.path.dirname(os.path.realpath(__file__))}/plots"
+    if not os.path.exists(dir_path):
+        os.makedirs(dir_path)
+    plt.figure(figsize=(12, 6))
+    models = ['Naive Bayes', 'CNN']
+    precision_scores = [nb_p_score, cnn_p_score]
+    recall_scores = [nb_r_score, cnn_r_score]
+
+    # plot precision scores
+    plt.subplot(1, 2, 1)
+    plt.bar(models, precision_scores, color=['b', 'r'], width=0.5)
+    plt.ylabel("Precision Score")
+    plt.xlabel("Models")
+    plt.title("Model Precision Score Comparison")
+
+    # plot recall scores
+    plt.subplot(1, 2, 2)
+    plt.bar(models, recall_scores, color=['b', 'r'], width=0.5)
+    plt.ylabel("Recall Score")
+    plt.xlabel("Models")
+    plt.title("Model Recall Score Comparison")
+
+    plt.tight_layout()
+    plt.savefig(f"{dir_path}/precison_recall_comparison.png")
+    plt.close()
+    print(f"Model Precision and Recall Score comparison saved to {dir_path}/precision_recall_comparison.png\n")
