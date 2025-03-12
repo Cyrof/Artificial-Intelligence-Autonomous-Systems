@@ -1,3 +1,4 @@
+# This university module has been completed. Will be archived now.
 # Artificial Intelligence and Intelligent Agents Module
 
 Welcome to the `ai-ia` folder, which contains resources, code examples, and materials for the "Artificial Intelligence and Intelligent Agents" module. This module fundamental concepts and practical implementation of AI and intelligent agent systems.
